@@ -56,11 +56,12 @@ Você pode fazer o mesmo com o service
 ```bash
 kubectl get services -l app=kubernetes-bootcamp
 ```
-Também podemos adicionar novas Labels ao POD 
+Também podemos adicionar novas Labels ao POD, mas antes, vamos buscar o nome do POD
 ```bash
 export POD_NAME="$(kubectl get pods -o go-template --template '{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}')"
 echo "Name of the Pod: $POD_NAME"
 ```
+Adicioando a label
 ```bash
 kubectl label pods "$POD_NAME" version=v1
 ```

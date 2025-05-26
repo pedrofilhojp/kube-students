@@ -25,11 +25,11 @@ spec:
   replicas: 3
   selector:
     matchLabels:
-      app: hello-app
+      app: hello-app-pod
   template:
     metadata:
       labels:
-        app: hello-app
+        app: hello-app-pod
     spec:
       containers:
         - name: hello-container

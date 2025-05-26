@@ -23,11 +23,16 @@ spec:
       ports:
         - containerPort: 80
 ```
+ou
+```bash
+kubectl run meu-pod --port=80 --image=nginx --dry-run=client -o yaml > simple-pod.yaml
+```
 Crie o Pod:
 
 ```bash
 kubectl apply -f simple-pod.yaml
 ```
+
 
 ## 2️ Explorar a estrutura do Pod
 Use os comandos abaixo p`bash

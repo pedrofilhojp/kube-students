@@ -84,7 +84,7 @@ O **Deployment** é um recurso de nível mais alto que gerencia **ReplicaSets** 
 - Reverter facilmente para versões anteriores em caso de problemas.
 - Histórico de revisões para rastrear mudanças ao longo do tempo.
 
-Crie o arquivo deploy-simples.yaml:
+Crie o arquivo deploy-web.yaml:
 
 ```yaml
 apiVersion: apps/v1
@@ -93,11 +93,6 @@ metadata:
   name: deploy-web
 spec:
   replicas: 2
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 1
   selector:
     matchLabels:
       app: web-app
@@ -119,7 +114,7 @@ Aplicar os comandos:
 kubectl apply -f deploy-web.yaml
 kubectl get deployments
 ```
-## 📘 Explicação: Estratégia RollingUpdate
+## 📘 Criando um Deployment com strategy RollingUpdate
 
 Edite o arquivo "deploy-web.yaml" adicionando a sessão "**strategy**".
 

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-com-env
+spec:
+  containers:
+    - name: env-demo
+      image: busybox
+      command: [ "sh", "-c", "echo VAR1=$VAR1 && sleep 3600" ]
+      env:
+        - name: VAR1
+          value: "Exemplo de variável"

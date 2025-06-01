@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-nginx-sidecar
+spec:
+  volumes:
+    - name: logs-compartilhado
+      emptyDir: {}
+  containers:
+    - name: web
+      image: nginx
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: logs-compartilhado
+          mountPath: /var/log/nginx
+    - name: log-agent
+      image: busybox
+      volumeMounts:
+        - name: logs-compartilhado
+          mountPath: /var/log/nginx
+      command: ["sh", "-c", "tail -f /var/log/nginx/access.log;"]

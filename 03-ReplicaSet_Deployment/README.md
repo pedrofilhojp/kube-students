@@ -13,23 +13,42 @@ Este exercício foi desenvolvido para ambientes locais com Kind e visa explorar:
 - Explorar estratégias de atualização
 - Realizar rollback em caso de falha
 
+## Motivação
+Um POD sozinho não é suficiente para colocar uma aplicação no AR. Quando o POD cai ou ocorre um erro na aplicação, simplementes a aplicação torna-se indisponível.
+
+Há várias situações que podem ocorrer na aplicação que necessita de uma intervenção automática do cluster. O kubernetes tem vários recursos extras para apoiar a disponibilidade de aplicação, as principais são:
+- Replicaset
+- Deployment
+- Services
+- HPA e VPA
+
+Aqui, veremos por enquanto apenas o **Replicaset** e **Deployment**
+
 ## 🔧 1. Criando um ReplicaSet
-Crie o arquivo replicaset.yaml:
+Um ReplicaSet é um recurso no Kubernetes que garante a disponibilidade de um número específico de réplicas (pods) em execução. Ele monitora os pods e, se algum falhar ou for deletado, o ReplicaSet cria um novo pod automaticamente para manter o estado desejado.
+
+✔️ Principais motivos para usar um ReplicaSet:
+
+- Garante que sempre exista a quantidade correta de pods em execução.
+- Recupera automaticamente pods que falham.
+- Permite escalar a aplicação facilmente (aumentar ou diminuir réplicas).
+
+Crie o arquivo rs-simples.yaml:
 
 ```yaml
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: hello-rs
+  name: rs-simples
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: hello-app-pod
+      app: pod
   template:
     metadata:
       labels:
-        app: hello-app-pod
+        app: pod
     spec:
       containers:
         - name: hello-container
@@ -40,8 +59,9 @@ spec:
 Aplique:
 
 ```bash
-kubectl apply -f replicaset.yaml
-kubectl get pods -l app=hello-app
+kubectl apply -f rs-simples.yaml
+kubectl get rs
+kubectl get pods -l app=app
 ```
 
 Teste de auto-recuperação:
@@ -52,14 +72,25 @@ kubectl delete pod <nome-do-pod>
 
 O ReplicaSet criará automaticamente um novo Pod para manter o número de réplicas.
 
-## 🚀 2. Criando um Deployment com estratégia RollingUpdate
-Crie o arquivo deployment.yaml:
+### Limitações do ReplicaSet
+Embora o ReplicaSet mantenha as réplicas, ele não gerencia atualizações da aplicação (por exemplo, quando você troca a imagem do contêiner para uma nova versão). Se você quiser implantar uma nova versão da aplicação, precisa **deletar e criar** um novo ReplicaSet manualmente.
+
+## 🚀 2. Criando um Deployment 
+
+O **Deployment** é um recurso de nível mais alto que gerencia **ReplicaSets** para você. Ele permite:
+
+- Declarar o estado desejado (imagem, número de réplicas, etc.) de maneira declarativa.
+- Executar atualizações sem downtime (com estratégias como Rolling Update).
+- Reverter facilmente para versões anteriores em caso de problemas.
+- Histórico de revisões para rastrear mudanças ao longo do tempo.
+
+Crie o arquivo deploy-simples.yaml:
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: web-deployment
+  name: deploy-web
 spec:
   replicas: 2
   strategy:
@@ -80,13 +111,51 @@ spec:
           image: nginx:1.21
           ports:
             - containerPort: 80
-Aplicar:
+```
+
+Aplicar os comandos:
 
 ```bash
-kubectl apply -f deployment.yaml
+kubectl apply -f deploy-web.yaml
 kubectl get deployments
 ```
 ## 📘 Explicação: Estratégia RollingUpdate
+
+Edite o arquivo "deploy-web.yaml" adicionando a sessão "**strategy**".
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-web
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+        - name: web-container
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
+```
+
+Em seguinte aplique as alterações
+```bash
+kubectl apply -f deploy-web.yaml
+kubectl get deployments
+```
+
 Esta é a estratégia **padrão** do Kubernetes.
 
 - Substitui os Pods gradualmente, um a um.
@@ -111,7 +180,7 @@ Veja o histórico:
 kubectl rollout history deployment/web-deployment
 🧯 4. Rollback após uma falha
 ```
-Atualize para uma imagem inválida:
+Atualize para uma imagem **INVÁLIDA**:
 
 ```bash
 kubectl set image deployment/web-deployment web-container=nginx:erro
@@ -121,14 +190,14 @@ Acompanhe a falha e faça rollback:
 ```bash
 kubectl rollout undo deployment/web-deployment
 ```
-## 🔁 5. Criando um Deployment com estratégia Recreate
+## 🔁 5. Criando um Deployment com strategy Recreate
 Crie o arquivo deployment-recreate.yaml:
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app-recreate
+  name: deploy-recreate
 spec:
   replicas: 2
   strategy:
@@ -150,13 +219,13 @@ spec:
 Aplique:
 
 ```bash
-kubectl apply -f deployment-recreate.yaml
+kubectl apply -f deploy-recreate.yaml
 ```
 Atualize a imagem:
 
 ```bash
-kubectl set image deployment/app-recreate app-container=nginx:1.25
-kubectl rollout status deployment/app-recreate
+kubectl set image deployment/deploy-recreate=nginx:1.25
+kubectl rollout status deployment/deploy-recreate
 ```
 ## 📘 Explicação: Estratégia Recreate
 - Remove todos os Pods antigos antes de criar os novos.
@@ -174,8 +243,8 @@ kubectl get rs
 Remover:
 
 ```bash
-kubectl delete deployment web-deployment app-recreate
-kubectl delete replicaset hello-rs
+kubectl delete deployment deploy-web deploy-recreate
+kubectl delete replicaset rs-simples
 ```
 ## ✅ Conclusão
 Neste exercício você:

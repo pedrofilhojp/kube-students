@@ -1,2 +1,3 @@
 # kube-students
-This repository contains examples that i using in my classes about kubernetes clusters
+This repository contains examples that i created to explain main components of kubernetes cluster in my classes
+

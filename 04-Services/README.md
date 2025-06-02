@@ -137,6 +137,7 @@ spec:
 Para testar o service, vamos observar os logs do POD (pod-geturl)
 
 ```bash
+kubectl apply -f svc-clusterip.yaml
 kubectl logs pods/pod-geturl -f
 ```
 
@@ -193,6 +194,7 @@ kubectl get services
 
 Observe que forçamos um mapeamento em TODOS os nodes (servidores Worker ou ControlPlane) com a porta 30080. Então, basta pegar o endereço IP de qualquer Node do cluster, e acessar com essa porta.
 > **Observação:** Se não especificar a porta em `nodePort` o kubernetes escolherá alguma porta dentro do intervalo "30000-32767"
+Esse service também faz um mapeamento interno no cluster, isso quer dizer que, é possível acessar esse Service de dentro do Cluster pela porta 80, `port: 80` 
 
 ```bash
 kubectl get nodes -o wide

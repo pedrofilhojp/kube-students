@@ -4,4 +4,4 @@ metadata:
   name: svc-external
 spec:
   type: ExternalName
-  externalName: google.com
+  externalName: www.google.com

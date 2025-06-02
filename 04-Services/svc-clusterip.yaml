@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.21-alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+      - name: ip-writer
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        # Cria um index.html com o IP da réplica antes do Nginx iniciar
+        args:
+          - |
+            echo "<html><body><h1>Meu IP é: $(hostname -i)</h1></body></html>" > /html/index.html;
+            sleep 3600;
+        volumeMounts:
+        - name: html
+          mountPath: /html
+      volumes:
+      - name: html
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-clusterip
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-geturl
+spec:
+  containers:
+  - name: curl
+    image: nginx
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        while true; do
+          echo "Fazendo requisição ao svc-clusterip:80";
+          curl -s svc-clusterip | sed -n 's/.*<h1>\(.*\)<\/h1>.*/\1/p';
+          echo "---";
+          sleep 2;
+        done

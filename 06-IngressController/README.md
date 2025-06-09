@@ -238,6 +238,100 @@ spec:
                   number: 80
 ```
 
+###  2.1 Fanout com backend sempre recebendo “/”
+Quando você tem um Ingress do tipo fanout (com vários paths, por exemplo /app1, /app2), mas quer que o backend sempre receba a requisição como “/” (independente do path original), você precisa usar a annotation de rewrite.
+
+```yaml
+nginx.ingress.kubernetes.io/rewrite-target: /
+```
+Exemplo completo
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fanout-rewrite
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: fanout.local
+      http:
+        paths:
+          - path: /app1
+            pathType: Prefix
+            backend:
+              service:
+                name: app1-svc
+                port:
+                  number: 80
+          - path: /app2
+            pathType: Prefix
+            backend:
+              service:
+                name: app2-svc
+                port:
+                  number: 80
+```
+### Importante:
+- ✅ Sem a rewrite: o backend vê /app1, /app2 como path.
+- ✅ Com a rewrite: o backend sempre vê /.
+
+### 2.2. Outros exemplos de rewrite
+Quer reescrever para um sub-path específico (ex: /index.html)?
+
+```yaml
+nginx.ingress.kubernetes.io/rewrite-target: /index.html
+```
+
+Quer reescrever para o path que vem depois do prefixo?
+
+Use captura com regex:
+```yaml
+nginx.ingress.kubernetes.io/rewrite-target: /$2
+nginx.ingress.kubernetes.io/use-regex: "true"
+```
+E paths assim:
+```yaml
+- path: /app1(/|$)(.*)
+  pathType: ImplementationSpecific
+
+```
+Exemplo completo
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fanout-regex
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: fanout.local
+      http:
+        paths:
+          - path: /app1(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: app1-svc
+                port:
+                  number: 80
+```
+
+Que significa cada parte do regex?
+
+✅ path: /app1(/|$)(.*)
+- /app1 – o prefixo que será removido.
+- (/|$) – captura a barra logo depois de /app1, ou nada ($ significa fim).
+- (.*) – captura todo o resto do path (se existir).
+
+✅ nginx.ingress.kubernetes.io/rewrite-target: /$2
+- O $2 significa "o que foi capturado no segundo grupo de regex" → (.*)
+- Isso remove /app1 e mantém o resto do path. Desta forma, se a url for `/app1/user/2`, vai repassar para o backend apenas `/user/2`.
+
 ## 3. Name based virtual hosting 
 
 Aqui, há um roteamento baseado no **header hosting** da requisição HTTP.

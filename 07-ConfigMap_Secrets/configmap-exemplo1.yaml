@@ -1,0 +1,22 @@
+# configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meu-configmap
+data:
+  APP_MODE: "production"
+  APP_COLOR: "blue"
+---
+# pod-com-configmap.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-com-configmap
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ["sh", "-c", "env && sleep 3600"]
+    envFrom:
+    - configMapRef:
+        name: meu-configmap
